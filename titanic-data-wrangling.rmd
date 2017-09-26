@@ -1,0 +1,87 @@
+# Titanic Data Wrangling Project
+
+###### This project is based on a data set of various attributes of passengers on the Titanic, including who survived and who didn’t. R is used to handle missing values and create a new data set.
+
+### load dplyr and tidyr and csv file
+```{r load dplyr and tidyr and csv file}
+library(dplyr)
+library(tidyr)
+
+titanic_original <- read.csv("titanic_original.csv")
+```
+
+### fill in missing values in the embarked column
+```{r fill in missing values in the embarked column}
+titanic_embarked <- titanic_original[,]
+
+sum(is.na(titanic_embarked$embarked)) # 0
+sum(titanic_embarked$embarked == "") # 3
+
+for (e in 1:nrow(titanic_embarked)) {
+  if (titanic_embarked$embarked[e] == "") {
+    titanic_embarked$embarked[e] = "S"
+  }
+}
+
+sum(titanic_embarked$embarked == "") # 0
+
+# Southampton was used to populate the missing port of embarkment values because these are known to correspond to passengers who actually embarked at Southampton.
+```
+
+### fill in missing values in the age column
+```{r fill in missing values in the age column}
+titanic_age <- titanic_embarked[,]
+
+sum(is.na(titanic_age$age)) # 264
+sum(titanic_age$age == "") # NA
+
+ages <- subset(titanic_age, (!is.na(titanic_age$age)))
+mean_age <- mean(ages$age) # 29.88113
+
+for (a in 1:nrow(titanic_age)) {
+  if (is.na(titanic_age$age[a])) {
+    titanic_age$age[a] = mean_age
+  }
+}
+
+sum(is.na(titanic_age$age)) # 0
+
+# The mean was used to populate the missing age values. Another method could alternately have been selected. Picking a random age value may have significantly skewed the data in the direction of that value. However, an argument could also be made that the median would be the ideal measure to use, as it would skew the data even less than the mean, which is more sensitive to outliers. 
+```
+
+### fill in missing values in the boat column
+```{r fill in missing values in the boat column}
+titanic_boat <- titanic_age[,]
+
+sum(is.na(titanic_boat$boat)) # 0
+sum(titanic_boat$boat == "") # 824
+
+titanic_boat$boat <- as.character(titanic_boat$boat) 
+
+for (b in 1:nrow(titanic_boat)) {
+  if (titanic_boat$boat[b] == "") {
+    titanic_boat$boat[b] = "None"
+  }
+}
+
+sum(titanic_boat$boat == "") # 0
+
+# The value "None" was used to populate the missing boat values because these values indicate passengers who did not make it onto a boat. The variable type was first changed from factor to character because "None" is not a valid factor level. 
+```
+
+### create a binary variable for cabin number
+```{r create a binary variable for cabin number}
+titanic_clean <- titanic_boat[,]
+
+sum(is.na(titanic_clean$cabin)) # 0
+sum(titanic_clean$cabin == "") # 1015
+
+titanic_clean$has_cabin_number <- ifelse(titanic_clean$cabin != "", 1, 0)
+
+# It does not make much sense to fill in missing cabin numbers with values because there is not any one clear factor that determines which of these values are missing. A majority of the missing values appear to be for second and third class passengers, but several cabin values are missing for first class passengers as well. It is not clear what a missing value here actually means, though there is clearly some degree of correleation between cabin and pclass (i.e. ticket class).
+```
+
+### write cleaned data to csv file
+```{r write cleaned data to csv file}
+write.csv(titanic_clean, file="titanic_clean.csv")
+```
